@@ -1,6 +1,16 @@
 # tf-molecule-iam-group-membership-aws
 
-IAM group with user membership and policy attachments.
+Terraform molecule that provisions an IAM group, adds users to it, and attaches
+managed policies — composed from tf-label-labelled atom modules.
+
+## Features
+
+- Creates an IAM group with a tf-label-derived, deterministic name.
+- Adds a list of existing IAM users to the group (`user_names`).
+- Attaches zero or more managed policies by ARN (`policy_arns`, one attachment per ARN).
+- Optional custom IAM group `group_path`.
+- Honours the standard tf-label `enabled` switch — set `enabled = false` to create nothing.
+- Exposes the group ARN/name and the membership list as outputs for downstream wiring.
 
 ## Usage
 
@@ -12,7 +22,10 @@ module "developers" {
   environment = "prod"
   name        = "developers"
 
-  user_names  = ["alice", "bob"]
+  # Required: IAM users to place in the group
+  user_names = ["alice", "bob"]
+
+  # Optional: managed policies to attach to the group
   policy_arns = ["arn:aws:iam::aws:policy/ReadOnlyAccess"]
 }
 ```
@@ -76,3 +89,20 @@ No resources.
 | <a name="output_group_name"></a> [group\_name](#output\_group\_name) | Name of the IAM group |
 | <a name="output_users"></a> [users](#output\_users) | List of users in the group |
 <!-- END_TF_DOCS -->
+
+## Tests
+
+Unit tests use a mock AWS provider (no real AWS calls) and assert only on
+plan-known values (the tf-label id, the `enabled` flag, and input pass-throughs).
+
+```bash
+# Unit tests (mock provider — no credentials needed)
+terraform init -backend=false
+terraform test -test-directory=tests/unit
+
+# Or via the Makefile
+make test-unit
+
+# Integration tests (require real AWS credentials)
+terraform test -test-directory=tests/integration
+```
